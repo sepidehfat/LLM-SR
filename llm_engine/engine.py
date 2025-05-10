@@ -18,7 +18,7 @@ parser.add_argument('--host', type=str, default=None)
 parser.add_argument('--port', type=int, default=None)
 parser.add_argument('--temperature', type=float, default=0.8)
 parser.add_argument('--do_sample', type=bool, default=True)
-parser.add_argument('--max_new_tokens', type=int, default=512)
+parser.add_argument('--max_new_tokens', type=int, default=1024)
 parser.add_argument('--top_k', type=int, default=30)
 parser.add_argument('--top_p', type=float, default=0.9)
 parser.add_argument('--eos_token_id', type=int, default=32021)
@@ -72,6 +72,8 @@ tokenizer = AutoTokenizer.from_pretrained(
     pretrained_model_name_or_path=pretrained_model_path,
     )
 
+args.eos_token_id = tokenizer.eos_token_id
+args.pad_token_id = tokenizer.pad_token_id
 
 # flask API
 app = Flask(__name__)

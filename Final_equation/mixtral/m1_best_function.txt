@@ -1,0 +1,35 @@
+================= Evaluated Function =================
+def equation(time: np.ndarray, depth: np.ndarray, AirTemp_degC: np.ndarray, Longwave_Wm: np.ndarray, Latent_Wm: np.ndarray, Sensible_Wm: np.ndarray, Shortwave_Wm: np.ndarray, lightExtinct_m: np.ndarray, Area_m2: np.ndarray, ice: np.ndarray, snow: np.ndarray, snowice: np.ndarray, temp_initial00: np.ndarray, params: np.ndarray) -> np.ndarray:
+    """
+    Parametric approximation of lake temperature evolution based on energy balance.
+
+    Returns:
+        Updated temperature array (1D).
+    """
+    """
+    Improved version of the function `equation_v0`.
+    
+    Returns:
+        Updated temperature array (1D).
+    """
+    updated_temp = np.zeros_like(temp_initial00)
+    
+    for i in range(len(time)):
+        # Calculate the change in temperature due to longwave radiation
+        delta_temp = -params[0] * (temp_initial00[i] - Longwave_Wm[i])
+    
+        # Calculate the change in temperature due to shortwave radiation
+        albedo = ice[i] * (1 - snow[i]) + (1 - ice[i]) * 0.5
+        delta_temp += -params[1] * (1 - albedo) * np.exp(-lightExtinct_m[i] * depth[i]) * Shortwave_Wm[i]
+    
+        # Calculate the change in temperature due to heat flux
+        delta_temp += -params[2] * (Sensible_Wm[i] + Latent_Wm[i])
+    
+        # Calculate the change in temperature due to ice and snow cover
+        delta_temp += -params[3] * (1 - snowice[i]) * AirTemp_degC[i]
+    
+        # Calculate the updated temperature
+        updated_temp[i] = temp_initial00[i] + (delta_temp / depth[i])
+    
+    return updated_temp
+------------------------------------------------------

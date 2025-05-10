@@ -1,0 +1,61 @@
+
+"""
+Find the mathematical function skeleton that represents the formation, growth, and melt of ice and snow layers on the lake surface.
+You are given current simulation time, actual depth, surface area of the layer (m²), Current ice thickness (m), boolean snow on the lake surface, snow-ice existance, Vertical thermal diffusivity (m²/s)
+Temperature for each time and depth pair has been calculated from the heating module (atmosphere-lake energy exchange).
+It should returns updated temperature, which represent the new state of the lake after accounting for freezing, melting, and insulation effects of the ice/snow layers over a single timestep.
+"""
+
+import numpy as np
+from scipy.optimize import minimize
+
+#Initialize parameters
+MAX_NPARAMS = 10
+params = [1.0]*MAX_NPARAMS
+
+
+@evaluate.run
+def evaluate(data: dict) -> float:
+    """Evaluate the equation on data observations."""
+    inputs, outputs = data['inputs'], data['outputs']
+
+    (time, depth, Area_m2, Uw,
+     buoyancy, ice, snow, snowice,
+     diffusivity, temp_heat01) = inputs.T
+
+    # Optimize parameters based on data
+    def loss(params):
+        y_pred = equation(
+            time, depth, Area_m2, Uw,
+            buoyancy, ice, snow, snowice,
+            diffusivity, temp_heat01, params  # ← fixed missing comma
+        )
+        return np.mean((y_pred - outputs) ** 2)
+
+    result = minimize(loss, [1.0] * MAX_NPARAMS, method='BFGS')
+    optimized_params = result.x
+    loss = result.fun
+
+    if np.isnan(loss) or np.isinf(loss):
+        return None
+    else:
+        return -loss
+
+@equation.evolve
+def equation(
+    time: np.ndarray,
+    depth: np.ndarray,
+    Area_m2: np.ndarray,
+    Uw: np.ndarray,
+    buoyancy: np.ndarray,
+    ice: np.ndarray,
+    snow: np.ndarray,    
+    snowice: np.ndarray, 
+    diffusivity: np.ndarray,
+    temp_heat01: np.ndarray,
+    params: np.ndarray
+) -> np.ndarray:
+    """
+    Return updated surface temperature after accounting for ice/snow effects.
+    """
+    return temp_heat01 - params[0] * (ice + params[1] * snow)

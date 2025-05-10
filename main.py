@@ -9,10 +9,10 @@ from llmsr import pipeline
 from llmsr import config
 from llmsr import sampler
 from llmsr import evaluator
-
+import pdb
 
 parser = ArgumentParser()
-parser.add_argument('--port', type=int, default=None)
+parser.add_argument('--port', type=int, default=5000)
 parser.add_argument('--use_api', type=bool, default=False)
 parser.add_argument('--api_model', type=str, default="gpt-3.5-turbo")
 parser.add_argument('--spec_path', type=str)
@@ -29,6 +29,8 @@ if __name__ == '__main__':
     class_config = config.ClassConfig(llm_class=sampler.LocalLLM, sandbox_class=evaluator.LocalSandbox)
     config = config.Config(use_api = args.use_api, 
                            api_model = args.api_model,)
+    os.environ["LLMSR_PORT"] = str(args.port) if args.port else "5000"
+    
     global_max_sample_num = 10000 
 
     # Load prompt specification
@@ -50,7 +52,7 @@ if __name__ == '__main__':
     data_dict = {'inputs': X, 'outputs': y}
     dataset = {'data': data_dict} 
     
-    
+    # breakpoint()
     pipeline.main(
         specification=specification,
         inputs=dataset,

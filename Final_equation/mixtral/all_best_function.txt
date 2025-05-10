@@ -1,0 +1,36 @@
+================= Evaluated Function =================
+def equation(time: np.ndarray, depth: np.ndarray, AirTemp_degC: np.ndarray, Longwave_Wm2: np.ndarray, Latent_Wm2: np.ndarray, Sensible_Wm2: np.ndarray, Shortwave_Wm2: np.ndarray, lightExtinct_m1: np.ndarray, Area_m2: np.ndarray, ice: np.ndarray, snow: np.ndarray, snowice: np.ndarray, buoyancy: np.ndarray, diffusivity: np.ndarray, temp_initial00: np.ndarray, params: np.ndarray) -> np.ndarray:
+    """
+    Predict final lake temperature for the next <time, depth> pair after full process chain using symbolic form.
+    """
+    """Improved version of `equation_v1`."""
+    
+    # Convert inputs to appropriate units
+    AirTemp_K = AirTemp_degC + 273.15
+    Longwave_Wm2_to_K = Longwave_Wm2 / (4 * 3.14e-8 * Area_m2)  # convert to W/m^2 to K
+    Shortwave_Wm2_to_K = Shortwave_Wm2 / (4 * 3.14e-8 * Area_m2)  # convert to W/m^2 to K
+    diffusivity_m2_s = diffusivity / (depth * 100)  # convert to m^2/s
+    stability_check = 0.01 * np.abs(temp_initial00[0] - temp_initial00[-1])  # a small value to avoid zero division
+    
+    # Calculate the atmospheric heating term
+    atmospheric_heating = params[0] * AirTemp_K + params[1] * Longwave_Wm2_to_K * (ice == 0) + params[11] * Longwave_Wm2_to_K * (ice > 0) + params[2] * Shortwave_Wm2_to_K - params[3] * Latent_Wm2 - params[4] * Sensible_Wm2
+    
+    # Calculate the insulation term from ice and snow
+    insulation_term = params[5] * (ice > 0) + params[6] * (snow > 0) + params[7] * (snowice > 0)
+    
+    # Calculate the convective mixing term using the stability check
+    convective_term = params[8] * np.abs(buoyancy) * (temp_initial00[-1] - temp_initial00) * (np.abs(temp_initial00[-1] - temp_initial00) > stability_check)
+    
+    # Calculate the heat diffusion term with a convective adjustment scheme
+    diffusion_term = (params[9] * diffusivity_m2_s * (temp_initial00 - temp_initial00[0])
+                       + params[10] * (temp_initial00[-1] - temp_initial00) * (np.abs(temp_initial00[-1] - temp_initial00[-2]) > stability_check))
+    
+    # Apply a stability check to prevent negative diffusion (no oscillations)
+    if np.all(diffusion_term < 0):
+        diffusion_term *= -1
+    
+    # Calculate the change in temperature
+    temp_update = temp_initial00 + (atmospheric_heating + insulation_term + diffusion_term + convective_term)
+    
+    return temp_update
+------------------------------------------------------

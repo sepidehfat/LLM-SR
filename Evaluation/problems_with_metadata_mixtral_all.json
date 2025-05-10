@@ -1,0 +1,18 @@
+[
+  {
+    "equation_id": 1,
+    "predicted_equations": "Step 1: AirTemp_K = AirTemp_degC + 273.15 Step 2: Longwave_Wm2_to_K = Longwave_Wm2 / (4 * 3.14e-8 * Area_m2) Step 3: Shortwave_Wm2_to_K = Shortwave_Wm2 / (4 * 3.14e-8 * Area_m2) Step 4: diffusivity_m2_s = diffusivity / (depth * 100) Step 5: stability_check = 0.01 * np.abs(temp_initial00[0] - temp_initial00[-1]) Step 6: atmospheric_heating = params[0] * AirTemp_K + params[1] * Longwave_Wm2_to_K * (ice == 0) + params[11] * Longwave_Wm2_to_K * (ice > 0) + params[2] * Shortwave_Wm2_to_K - params[3] * Latent_Wm2 - params[4] * Sensible_Wm2 Step 7: insulation_term = params[5] * (ice > 0) + params[6] * (snow > 0) + params[7] * (snowice > 0) Step 8: convective_term = params[8] * np.abs(buoyancy) * (temp_initial00[-1] - temp_initial00) * (np.abs(temp_initial00[-1] - temp_initial00) > stability_check) Step 9: diffusion_term = (params[9] * diffusivity_m2_s * (temp_initial00 - temp_initial00[0]) + params[10] * (temp_initial00[-1] - temp_initial00) * (np.abs(temp_initial00[-1] - temp_initial00[-2]) > stability_check)) Step 10: diffusion_term *= -1 Step 11: temp_update = temp_initial00 + (atmospheric_heating + insulation_term + diffusion_term + convective_term) Final Equation: temp_update = temp_initial00 + (atmospheric_heating + insulation_term + diffusion_term + convective_term)",
+    "X_samples": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ]
+    ],
+    "description": "Find the mathematical function skeleton that represents the updated temperature profile of a vertically discretized lake water column after one timestep of simulation.  \nYou are given current simulation time, depth, initial lake temperature, buoyancy, vertical thermal diffusivity, ice and snow layer properties, lake surface area, and meteorological variables including shortwave and longwave radiation, latent and sensible heat fluxes, air temperature, and light extinction coefficient.  \nThe function should implicitly account for heating from atmospheric fluxes, thermal insulation and phase change from ice and snow, vertical heat diffusion, and convective mixing.  \nReturn the lake temperature at each depth after one timestep."
+  }
+]

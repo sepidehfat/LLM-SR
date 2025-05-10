@@ -1,0 +1,70 @@
+
+"""
+Find the mathematical function skeleton that represents the updated temperature profile of a vertically discretized lake water column after one timestep of simulation.  
+You are given current simulation time, depth, initial lake temperature, buoyancy, vertical thermal diffusivity, ice and snow layer properties, lake surface area, and meteorological variables including shortwave and longwave radiation, latent and sensible heat fluxes, air temperature, and light extinction coefficient.  
+The function should implicitly account for heating from atmospheric fluxes, thermal insulation and phase change from ice and snow, vertical heat diffusion, and convective mixing.  
+Return the lake temperature at each depth after one timestep.
+"""
+
+import numpy as np
+from scipy.optimize import minimize
+
+#Initialize parameters
+MAX_NPARAMS = 15
+params = [1.0] * MAX_NPARAMS
+
+@evaluate.run
+def evaluate(data: dict) -> float:
+    """Evaluate full end-to-end lake model over one timestep."""
+    inputs, outputs = data['inputs'], data['outputs']
+
+    (time, depth, AirTemp_degC, Longwave_Wm2, Latent_Wm2, Sensible_Wm2,
+    Shortwave_Wm2, lightExtinct_m1, Area_m2, ice, snow, snowice, buoyancy,
+    diffusivity, temp_initial00) = inputs.T
+    print("params:", params)
+
+    def loss(params):
+        y_pred = equation(
+        time, depth, AirTemp_degC, Longwave_Wm2, Latent_Wm2, Sensible_Wm2,
+        Shortwave_Wm2, lightExtinct_m1, Area_m2, ice, snow, snowice, buoyancy,
+        diffusivity, temp_initial00, params
+         )
+        return np.mean((y_pred - outputs) ** 2)
+
+    loss_partial = lambda params: loss(params)
+    result = minimize(loss_partial, [1.0]*MAX_NPARAMS, method='BFGS')
+    
+    # Return evaluation score
+    optimized_params = result.x
+    loss = result.fun
+
+    if np.isnan(loss) or np.isinf(loss):
+        return None
+    else:
+        return -loss
+
+
+@equation.evolve
+def equation(
+    time: np.ndarray,
+    depth: np.ndarray,
+    AirTemp_degC: np.ndarray,
+    Longwave_Wm2: np.ndarray,
+    Latent_Wm2: np.ndarray,
+    Sensible_Wm2: np.ndarray,
+    Shortwave_Wm2: np.ndarray,
+    lightExtinct_m1: np.ndarray,
+    Area_m2: np.ndarray,
+    ice: np.ndarray,
+    snow: np.ndarray,
+    snowice: np.ndarray,
+    buoyancy: np.ndarray,
+    diffusivity: np.ndarray,
+    temp_initial00: np.ndarray,
+    params: np.ndarray
+) -> np.ndarray:
+    """
+    Predict final lake temperature for the next <time, depth> pair after full process chain using symbolic form.
+    """
+    temp_update = temp_initial00
+    return temp_update

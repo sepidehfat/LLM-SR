@@ -1,0 +1,58 @@
+
+"""
+Find the mathematical function skeleton that represents vertical thermal diffusion of temperature in a lake water column.  
+You are given current simulation time, depth, ice thickness (m), snow thickness (m), presence of snow-ice, and temperature at each depth after applying atmospheric and ice/snow energy fluxes.  
+Return the updated temperature at each depth after accounting for vertical heat diffusion across lake layers over a single timestep.  
+"""
+
+import numpy as np
+from scipy.optimize import minimize
+
+#Initialize parameters
+MAX_NPARAMS = 10
+params = [1.0]*MAX_NPARAMS
+
+@evaluate.run
+def evaluate(data: dict) -> float:
+    """Evaluate the equation on data observations."""
+    inputs, outputs = data['inputs'], data['outputs']
+    
+    # Unpack variables from inputs
+    time, depth, ice, snow, snowice, temp_total05 = inputs.T
+
+    # Loss function to optimize
+    def loss(params):
+        y_pred = equation(
+            time, depth, ice, snow, snowice, temp_total05, params
+        )
+        return np.mean((y_pred - outputs) ** 2)
+
+    result = minimize(loss, [1.0] * MAX_NPARAMS, method='BFGS')
+    optimized_params = result.x
+    loss_value = result.fun
+
+    if np.isnan(loss_value) or np.isinf(loss_value):
+        return None
+    else:
+        return -loss_value
+
+@equation.evolve
+def equation(
+    time: np.ndarray,
+    depth: np.ndarray,
+    ice: np.ndarray,
+    snow: np.ndarray,
+    snowice: np.ndarray,
+    temp_total05: np.ndarray,
+    params: np.ndarray
+) -> np.ndarray:
+    """
+    Approximate vertical diffusion impact on temperature using input profiles.
+    """
+    return (
+        temp_total05
+        - params[0] * depth
+        - params[1] * ice
+        - params[2] * snow
+        - params[3] * snowice
+    )

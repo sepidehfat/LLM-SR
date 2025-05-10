@@ -1,0 +1,67 @@
+
+"""
+Find the mathematical function skeleton that represents the updated lake temperature due to convective mixing in a stratified water column.  
+You are given current simulation time, depth, ice thickness (m), snow thickness (m), snow-ice presence, and the temperature profile after diffusive adjustments.  
+Return the updated lake temperature after applying vertical convection over a single timestep.  
+Only return the equation function without any explanation.
+"""
+
+import numpy as np
+from scipy.optimize import minimize
+
+#Initialize parameters
+MAX_NPARAMS = 10
+params = [1.0]*MAX_NPARAMS
+
+@evaluate.run
+def evaluate(data: dict) -> float:
+    """ Evaluate the equation on data observations."""
+    
+    # Load data observations
+    inputs, outputs = data['inputs'], data['outputs']
+    
+    time, depth, ice, snow, snowice, temp_diff02 = inputs.T
+    
+    # Optimize parameters based on data
+    def loss(params):
+        y_pred = equation(
+            time, depth, ice, snow, snowice, temp_diff02, params
+        )
+        return np.mean((y_pred - outputs) ** 2)
+
+    loss_partial = lambda params: loss(params)
+    MAX_NPARAMS = 10
+    result = minimize(loss_partial, [1.0]*MAX_NPARAMS, method='BFGS')
+    
+    # Return evaluation score
+    optimized_params = result.x
+    loss = result.fun
+
+    if np.isnan(loss) or np.isinf(loss):
+        return None
+    else:
+        return -loss
+
+
+
+
+@equation.evolve
+def equation(
+    time: np.ndarray,
+    depth: np.ndarray,
+    ice: np.ndarray,
+    snow: np.ndarray,
+    snowice: np.ndarray,
+    temp_diff02: np.ndarray,
+    params: np.ndarray
+) -> np.ndarray:
+    """
+    Update lake temperature based on vertical convective mixing.
+    """
+    return (
+        temp_diff02
+        + params[0] * depth
+        - params[1] * ice
+        - params[2] * snow
+        - params[3] * snowice
+    )

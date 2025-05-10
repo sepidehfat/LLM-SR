@@ -1,0 +1,85 @@
+
+"""
+Find the mathematical function skeleton that represents the updated lake temperature profile due to heat transfer from atmospheric forcing in a vertically discretized water column.  
+You are given current simulation time, depth, initial lake temperature, surface area, and meteorological variables including air temperature, longwave radiation, shortwave radiation, latent and sensible heat fluxes, light extinction, and presence of surface ice and snow.  
+Return the updated lake temperature after applying atmospheric heat fluxes over a single timestep.  
+"""
+
+
+import numpy as np
+from scipy.optimize import minimize
+
+#Initialize parameters
+MAX_NPARAMS = 10
+params = [1.0]*MAX_NPARAMS
+
+
+@evaluate.run
+def evaluate(data: dict) -> float:
+    """ Evaluate the equation on data observations."""
+    
+    # Load data observations
+    inputs, outputs = data['inputs'], data['outputs']
+    
+    (time, depth, AirTemp_degC, Longwave_Wm, Latent_Wm, Sensible_Wm,
+    Shortwave_Wm, lightExtinct_m, Area_m2, ice, snow, snowice, temp_initial00) = inputs.T
+    
+    # Optimize parameters based on data
+    def loss(params):
+        y_pred = equation(
+        time, depth, AirTemp_degC, Longwave_Wm, Latent_Wm, Sensible_Wm,
+        Shortwave_Wm, lightExtinct_m, Area_m2, ice, snow, snowice, temp_initial00,
+        params
+         )
+        return np.mean((y_pred - outputs) ** 2)
+
+    loss_partial = lambda params: loss(params)
+    MAX_NPARAMS = 10
+    result = minimize(loss_partial, [1.0]*MAX_NPARAMS, method='BFGS')
+    
+    # Return evaluation score
+    optimized_params = result.x
+    loss = result.fun
+
+    if np.isnan(loss) or np.isinf(loss):
+        return None
+    else:
+        return -loss
+
+
+
+@equation.evolve
+def equation(
+    time: np.ndarray,
+    depth: np.ndarray,
+    AirTemp_degC: np.ndarray,
+    Longwave_Wm: np.ndarray,
+    Latent_Wm: np.ndarray,
+    Sensible_Wm: np.ndarray,
+    Shortwave_Wm: np.ndarray,
+    lightExtinct_m: np.ndarray,
+    Area_m2: np.ndarray,
+    ice: np.ndarray,
+    snow: np.ndarray,
+    snowice: np.ndarray,
+    temp_initial00: np.ndarray,
+    params: np.ndarray
+) -> np.ndarray:
+    """
+    Parametric approximation of lake temperature evolution based on energy balance.
+
+    Returns:
+        Updated temperature array (1D).
+    """
+    return (
+        params[0] * temp_initial00 +
+        params[1] * Area_m2 +
+        params[2] * Shortwave_Wm +
+        params[3] * Longwave_Wm +
+        params[4] * Sensible_Wm +
+        params[5] * Latent_Wm +
+        params[6] * AirTemp_degC +
+        params[7] * lightExtinct_m +
+        params[8] * ice +
+        params[9] * snowice
+    )

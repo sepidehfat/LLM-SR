@@ -1,0 +1,54 @@
+
+"""
+Find the mathematical function skeleton that models the vertical distribution of heat (internal heat generation) in a lake as a function of depth and surface short-wave radiation. 
+"""
+
+import numpy as np
+
+#Initialize parameters
+MAX_NPARAMS = 10
+params = [1.0]*MAX_NPARAMS
+
+@evaluate.run
+def evaluate(data: dict) -> float:
+    """ Evaluate the equation on data observations."""
+
+    # Load data observations
+    inputs, outputs = data['inputs'], data['outputs']
+    depth, Jsw = inputs[:, 0], inputs[:, 1]
+    
+    # Optimize parameters based on data
+    from scipy.optimize import minimize
+    def loss(params):
+        y_pred = equation(depth, Jsw, params)
+        return np.mean((y_pred - outputs) ** 2)
+
+    loss_partial = lambda params: loss(params)
+    MAX_NPARAMS = 10
+    result = minimize(loss_partial, [1.0]*MAX_NPARAMS, method='BFGS')
+    
+    # Return evaluation score
+    optimized_params = result.x
+    loss = result.fun
+
+    if np.isnan(loss) or np.isinf(loss):
+        return None
+    else:
+        return -loss
+
+
+
+@equation.evolve
+def equation(depth: np.ndarray, Jsw: np.ndarray, params: np.ndarray) -> np.ndarray:
+    """ Mathematical function for heat flux at different depths.
+
+    Args:
+        depth: A numpy array of depth values.
+        Jsw: A numpy array of total incident short-wave radiation (W/m²).
+        params: Array of numeric constants or parameters to be optimized
+
+    Returns:
+        A numpy array of heat flux values (W/m²) at the given depths.
+    """
+    H = params[0] * Jsw + params[1] * depth
+    return H
