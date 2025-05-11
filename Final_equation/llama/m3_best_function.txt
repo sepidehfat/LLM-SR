@@ -1,0 +1,41 @@
+================= Evaluated Function =================
+def equation(time: np.ndarray, depth: np.ndarray, ice: np.ndarray, snow: np.ndarray, snowice: np.ndarray, temp_total05: np.ndarray, params: np.ndarray) -> np.ndarray:
+    """
+    Approximate vertical diffusion impact on temperature using input profiles.
+    """
+    """
+    Approximate vertical diffusion impact on temperature using input profiles.
+    """
+    alpha_aquha = params[0]  # thermal diffusivity of lake water (m^2/s)
+    kappa_aquha = params[1]  # thermal conductivity of the lake (W/m*K)
+    delta_rho = params[2]     # lake water density (kg/m3)
+    delta_c = params[3]       # lake water heat capacity (J/kg*K)
+    ci = params[4]         # ice fraction in each layer
+    cs = params[5]         # snow fraction in each layer
+    T_ext = temp_total05  # external temperature profile
+    
+    thermal_conductivity = kappa_aquha * (1 - ci - cs)
+    thermal_diffusivity = alpha_aquha * thermal_conductivity / (thermal_conductivity * delta_rho * delta_c)
+    
+    thermal_adsorption = 0  # thermal adsorption factor
+    
+    T = np.copy(temp_total05)
+    
+    t_step = 1  # Define the time step
+    
+    for i in range(1, len(depth) - 1):
+        if depth[i] < ice[i]:
+            alpha = thermal_diffusivity * ci[i]
+        elif depth[i] < snow[i]:
+            alpha = thermal_diffusivity * cs[i]
+        else:
+            alpha = thermal_diffusivity
+        
+        dTdt = alpha * (T[i+1] - T[i-1]) / (depth[i+1] - depth[i-1])**2
+        
+        # Numerically solve the heat equation dT/dt = alpha dT/dz^2
+        # using the finite difference method (FDM)
+        T[i] += t_step * alpha * (T[i+1] - 2*T[i] + T[i-1]) / (depth[i+1] - depth[i-1])**2
+    
+    return T
+------------------------------------------------------

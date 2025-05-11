@@ -1,0 +1,41 @@
+================= Evaluated Function =================
+def equation(time: np.ndarray, depth: np.ndarray, ice: np.ndarray, snow: np.ndarray, snowice: np.ndarray, temp_diff02: np.ndarray, params: np.ndarray) -> np.ndarray:
+    """
+    Update lake temperature based on vertical convective mixing.
+    """
+    """Improved version of `equation_v1`."""
+    
+    # Convective mixing stability criterion
+    stability_constant = params[0]
+    stability_check = temp_diff02 > (stability_constant * depth)
+    
+    # Wind effect on convective mixing
+    wind_effect = params[1] * np.abs(depth) * (depth <= params[2])
+    
+    # Advection term
+    advection_term = -params[3] * temp_diff02 * (depth >= 0) * (depth <= params[2])
+    
+    # Ice and snow terms
+    ice_snow_term = params[4] * (np.abs(ice) + (np.abs(snow) + np.abs(snowice) * 0.75))
+    
+    # Depth-varying convective mixing intensity
+    convective_intensity_factor = params[5] + params[6] * depth
+    convective_term = (
+        -convective_intensity_factor * np.maximum(0, temp_diff02 - stability_constant * depth) * stability_check
+        + wind_effect
+    )
+    
+    # Depth term
+    depth_term = params[7] * depth
+    
+    # Calculate the updated temperature
+    updated_temp = (
+        temp_diff02
+        + depth_term
+        - ice_snow_term
+        + advection_term
+        + convective_term
+    )
+    
+    return updated_temp
+------------------------------------------------------

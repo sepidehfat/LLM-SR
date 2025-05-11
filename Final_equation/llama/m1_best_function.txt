@@ -1,0 +1,52 @@
+================= Evaluated Function =================
+def equation(time: np.ndarray, depth: np.ndarray, AirTemp_degC: np.ndarray, Longwave_Wm: np.ndarray, Latent_Wm: np.ndarray, Sensible_Wm: np.ndarray, Shortwave_Wm: np.ndarray, lightExtinct_m: np.ndarray, Area_m2: np.ndarray, ice: np.ndarray, snow: np.ndarray, snowice: np.ndarray, temp_initial00: np.ndarray, params: np.ndarray) -> np.ndarray:
+    """
+    Parametric approximation of lake temperature evolution based on energy balance.
+
+    Returns:
+        Updated temperature array (1D).
+    """
+    """
+    Parametric approximation of lake temperature evolution based on energy balance.
+    
+    Returns:
+        Updated temperature array (1D).
+    """
+    # Importance of atmospheric forcing
+    dT_dt = params[0] * (AirTemp_degC - temp_initial00)
+    
+    # Exponential depth dependence
+    temperature_profile = temp_initial00 + params[1] * depth**params[2]
+    
+    # Radiation absorption and scattering
+    radiation_gradient = params[3] * (Longwave_Wm + Shortwave_Wm) * lightExtinct_m
+    
+    # Surface heat fluxes
+    latent_heat_flux = Latent_Wm * 1000
+    sensible_heat_flux = Sensible_Wm * 1000
+    
+    # Total heat flux and its impact on temperature profile
+    total_heat_flux = radiation_gradient - (latent_heat_flux + sensible_heat_flux)
+    temperature_profile += params[4] * total_heat_flux / (Area_m2 * params[5] * (1 + params[6] * (depth**2)))
+    
+    # Influence of ice, snow, and their combined effect
+    icelimit = 0.0
+    if ice.sum() > 0:
+        icelimit = 0.0
+    else:
+        icelimit = -10.0
+    
+    if snow.sum() > 0:
+        temperature_profile = np.where(depth > 0, temperature_profile, temp_initial00)
+    else:
+        temperature_profile -= params[7] * (snowice - icelimit)
+    
+    # Interplay between temperature and its derivatives
+    d2T_dt2 = params[8] * (temperature_profile - temperature_profile)
+    
+    # Final temperature update
+    temperature_profile += params[9] * (dT_dt + d2T_dt2)
+    
+    # Return the updated temperature profile
+    return temperature_profile
+------------------------------------------------------

@@ -1,0 +1,38 @@
+================= Evaluated Function =================
+def equation(time: np.ndarray, depth: np.ndarray, AirTemp_degC: np.ndarray, Longwave_Wm2: np.ndarray, Latent_Wm2: np.ndarray, Sensible_Wm2: np.ndarray, Shortwave_Wm2: np.ndarray, lightExtinct_m1: np.ndarray, Area_m2: np.ndarray, ice: np.ndarray, snow: np.ndarray, snowice: np.ndarray, buoyancy: np.ndarray, diffusivity: np.ndarray, temp_initial00: np.ndarray, params: np.ndarray) -> np.ndarray:
+    """
+    Predict final lake temperature for the next <time, depth> pair after full process chain using symbolic form.
+    """
+    
+    # Calculate radiation heat flux
+    radiation_heat_flux = params[0] * (Shortwave_Wm2 + Longwave_Wm2)
+    
+    # Calculate convection term
+    convection_term = params[1] * (AirTemp_degC - temp_initial00)
+    
+    # Calculate vertical heat diffusion
+    diffusivity_term = params[2] * diffusivity * (temp_initial00 - AirTemp_degC)
+    
+    # Calculate lake depth heating term
+    lake_depth_heating_term = params[3] * depth * (AirTemp_degC - temp_initial00)
+    
+    # Calculate lake surface heating term
+    lake_surface_heating_term = params[4] * (Shortwave_Wm2 - Latent_Wm2 - Sensible_Wm2)
+    
+    # Calculate ice melting term
+    ice_melting_term = params[5] * (snow + ice) * (AirTemp_degC - params[6])
+    
+    # Calculate thermal insulation term
+    thermal_insulation_term = params[7] * (snow + ice) * (AirTemp_degC - temp_initial00)
+    
+    # Calculate buoyancy term
+    buoyancy_term = params[8] * buoyancy * (temp_initial00 - AirTemp_degC)
+    
+    # Calculate other heat fluxes (e.g. latent, sensible)
+    other_heat_fluxes_term = params[9] * (Latent_Wm2 + Sensible_Wm2)
+    
+    # Calculate final lake temperature
+    temp_update = (1 - params[10]) * temp_initial00 + radiation_heat_flux + convection_term + diffusivity_term + lake_depth_heating_term + lake_surface_heating_term + ice_melting_term + thermal_insulation_term + buoyancy_term + other_heat_fluxes_term
+    
+    return temp_update
+------------------------------------------------------

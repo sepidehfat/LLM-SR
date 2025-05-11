@@ -1,0 +1,16 @@
+================= Evaluated Function =================
+def equation(time: np.ndarray, depth: np.ndarray, ice: np.ndarray, snow: np.ndarray, snowice: np.ndarray, temp_diff02: np.ndarray, params: np.ndarray) -> np.ndarray:
+    """
+    Update lake temperature based on vertical convective mixing.
+    """
+    """
+    Update lake temperature based on vertical convective mixing.
+    alpha_fresh, alpha_salt, delta_fresh, delta_salt, alpha_density, beta_fresh, beta_salt, sigma_fresh, sigma_salt, c_coriolis = params
+    """
+    alpha_fresh, alpha_salt, delta_fresh, delta_salt, alpha_density, beta_fresh, beta_salt, sigma_fresh, sigma_salt, c_coriolis = params
+    
+    dTdz_fp = alpha_fresh * (temp_diff02 - np.roll(temp_diff02, -1, axis=0)) / depth
+    dTdz_sp = alpha_salt * (temp_diff02 - np.roll(temp_diff02, 1, axis=0)) / depth
+    
+    return alpha_density * temp_diff02 + sigma_fresh * (beta_fresh * dTdz_fp / depth) * (1 - (beta_fresh * (ice / depth) * snowice)) + sigma_salt * (beta_salt * dTdz_sp / depth) * (1 - (beta_salt * (snow / depth) * snowice)) - delta_salt * beta_salt * dTdz_sp + c_coriolis * (beta_fresh * (ice / depth) * snowice)
+------------------------------------------------------
